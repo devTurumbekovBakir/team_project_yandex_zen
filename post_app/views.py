@@ -3,11 +3,11 @@ from rest_framework.generics import RetrieveUpdateDestroyAPIView, ListCreateAPIV
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
 from rest_framework import status
-from .models import Post, Rating
+from .models import Post, Rating, Comment
 from .permissions import PostPermission
-from .serializers import PostSerializer, RatingSerializer
+from .serializers import PostSerializer, RatingSerializer, CommentSerializer
 
 import requests
 
@@ -27,7 +27,7 @@ def telegram_bot_sendtext(bot_token, bot_chatID, bot_message):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def post_list_create_api_view(request):
     if request.method == 'GET':
-        posts = Post.objects.all().annotate(avg_rating=Avg('rating__rating'))
+        posts = Post.objects.all().select_related('user').annotate(avg_rating=Avg('rating__rating'))
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
 
@@ -52,7 +52,7 @@ def post_list_create_api_view(request):
 
 
 class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.all().annotate(avg_rating=Avg('rating__rating'))
+    queryset = Post.objects.all().select_related('user').annotate(avg_rating=Avg('rating__rating'))
     serializer_class = PostSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [PostPermission]
@@ -61,6 +61,26 @@ class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
 class RatingListCreateAPIView(ListCreateAPIView):
     queryset = Rating.objects.all().select_related('post').select_related('user')
     serializer_class = RatingSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PostPermission]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CommentListCreateAPIView(ListCreateAPIView):
+    queryset = Comment.objects.all().select_related('post').select_related('user')
+    serializer_class = CommentSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CommentRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all().select_related('post').select_related('user')
+    serializer_class = CommentSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [PostPermission]
 

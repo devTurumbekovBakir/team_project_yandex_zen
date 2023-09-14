@@ -40,3 +40,18 @@ class Rating(models.Model):
 
     def __str__(self):
         return f'{self.post.title} ({self.user.username}): {self.rating}'
+
+
+class Comment(models.Model):
+    text = models.TextField(max_length=426)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return f'{self.user.username} - {self.post.title}'
