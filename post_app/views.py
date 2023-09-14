@@ -27,7 +27,7 @@ def telegram_bot_sendtext(bot_token, bot_chatID, bot_message):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def post_list_create_api_view(request):
     if request.method == 'GET':
-        posts = Post.objects.all().select_related('user').annotate(avg_rating=Avg('rating__rating'))
+        posts = Post.objects.all().annotate(avg_rating=Avg('rating__rating'))
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
 
@@ -45,14 +45,14 @@ def post_list_create_api_view(request):
             post_created = datetime.today().strftime('%Y-%m-%d %H:%M')
             telegram_message = f"Пост с названием '{post_title}' и текстом '{post_body}' успешно создан {post_created}"
 
-            telegram_bot_sendtext(BOT_TOKEN, request.user.telegram_id, telegram_message)
+            telegram_bot_sendtext(BOT_TOKEN, request.user.telegram_chat_id, telegram_message)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PostRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.all().select_related('user').annotate(avg_rating=Avg('rating__rating'))
+    queryset = Post.objects.all().annotate(avg_rating=Avg('rating__rating'))
     serializer_class = PostSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [PostPermission]
