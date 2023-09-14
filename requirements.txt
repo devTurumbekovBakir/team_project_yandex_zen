@@ -1,3 +1,4 @@
 djangorestframework
 requests
 django
+drf_yasg
